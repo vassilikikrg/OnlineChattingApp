@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "755364262748",
+    "project_id": "chatroom-android-9f14c",
+    "storage_bucket": "chatroom-android-9f14c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755364262748:android:74b3ac99cc07f8585b0799",
+        "android_client_info": {
+          "package_name": "com.karag.onlinechatapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJqB79GkizY9Eu-qlv4nCI2r0VdCZlrr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

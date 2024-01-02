@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">OnlineChatApp</string>
+    <string name="NewMessageTitle">New Message</string>
+    <string name="To">To:</string>
+</resources>
