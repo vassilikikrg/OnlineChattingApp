@@ -5,10 +5,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.firebase.database.DataSnapshot;
@@ -19,31 +20,29 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.karag.onlinechatapp.model.ChatMessage;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-
 public class ChatView extends AppCompatActivity {
 
-    TextView textView,allMessages;
+    TextView textView;
     EditText message;
+    LinearLayout allMessages;
     String sender_id,receiver_id,chat_id;
     FirebaseDatabase database;
     DatabaseReference messagesReference;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_chat_view);
 
         textView = findViewById(R.id.textViewTitle);
         message=findViewById(R.id.editTextMessage);
-        allMessages=findViewById(R.id.textViewMessages);
+        allMessages=findViewById(R.id.linearChat);
 
         sender_id = getIntent().getStringExtra("sender_id");
         receiver_id = getIntent().getStringExtra("receiver_id");
         chat_id = getIntent().getStringExtra("chat_id");
 
         Log.i("chat",chat_id);
-        allMessages.setText(""); //clean previous messages
+        //allMessages.setText(""); //clean previous messages
 
         database= FirebaseDatabase.getInstance();
         messagesReference=database.getReference("messages");
@@ -64,7 +63,7 @@ public class ChatView extends AppCompatActivity {
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                StringBuilder allMessageBuilder = new StringBuilder();
+                //StringBuilder allMessageBuilder = new StringBuilder();
 
                 for (DataSnapshot messageSnapshot : dataSnapshot.getChildren()) {
                     // Retrieve individual messages
@@ -77,8 +76,36 @@ public class ChatView extends AppCompatActivity {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot userSnapshot) {
                             String senderUsername = userSnapshot.getValue(String.class);
-                            allMessageBuilder.append(senderUsername + ": " + messageText + "\n");
-                            allMessages.setText(allMessageBuilder.toString());
+
+                            // Determine the layout to use based on the sender
+                            int layoutResId;
+                            if (senderId.equals(sender_id)) {
+                                layoutResId = R.layout.message_sent;
+                            } else {
+                                layoutResId = R.layout.message_received;
+                            }
+                            // Inflate the chat bubble layout
+                            View chatBubbleView = getLayoutInflater().inflate(layoutResId, null);
+                            // Set the message text
+                            TextView messageTextView = chatBubbleView.findViewById(R.id.textMessageSent);
+                            if (messageTextView == null) {
+                                messageTextView = chatBubbleView.findViewById(R.id.textMessageReceived);
+                            }
+                            messageTextView.setText(senderUsername + ": " + messageText);
+
+                            // Add the chat bubble to the layout
+                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                            );
+                            // Set layout gravity for message_sent to "end"
+                            if (senderId.equals(sender_id)) {
+                                params.gravity = Gravity.END;
+                            }
+                            params.setMargins(16, 16, 16, 16); // Add margins as needed
+                            chatBubbleView.setLayoutParams(params);
+                            // Add the chat bubble to the layout
+                            allMessages.addView(chatBubbleView);
                         }
 
                         @Override
