@@ -3,10 +3,14 @@ package com.karag.onlinechatapp;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -31,16 +35,52 @@ public class NewMessage extends AppCompatActivity {
     FirebaseDatabase database;
     DatabaseReference reference;
     String sender_id,sender_username, receiver_id,receiver_username,chat_id;
+    FirebaseAuth auth;
+    FirebaseUser user;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
         receiverUsername=findViewById(R.id.editTextReceiverUsername);
-        sender_id = getIntent().getStringExtra("sender_id");
-        sender_username=getIntent().getStringExtra("sender_username");
+
+        //Toolbar setup
+        Toolbar toolbar=findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Online Chat app");
+
+        //Code for Authentication
+        auth=FirebaseAuth.getInstance();
+        user = auth.getCurrentUser();
+        sender_id = user.getUid();
+        sender_username=user.getDisplayName();
         //Code for realtime database
         database = FirebaseDatabase.getInstance();
         reference = database.getReference();
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater=getMenuInflater();
+        inflater.inflate(R.menu.menu,menu);
+        MenuItem item = menu.findItem(R.id.logoutItem);
+        if(user!=null) {
+            item.setVisible(true);
+        }else{
+            item.setVisible(false);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        //signout process
+        //hide signout button
+        if (user!=null) {
+            auth.signOut();
+            item.setVisible(false);
+            Intent intent=new Intent(getApplicationContext(),Login.class);
+            startActivity(intent);
+        }
+        return true;
     }
     public void gotoconvo(View view){
         String r_username=receiverUsername.getText().toString().trim();
@@ -95,12 +135,10 @@ public class NewMessage extends AppCompatActivity {
                                 break;
                             }
                         }
-
                         if (!chatExists) {
                             createChat(uid1,uid2);
                             redirectToChatView();
                         }
-
                     }
 
                     @Override

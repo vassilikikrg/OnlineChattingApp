@@ -4,10 +4,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -43,7 +47,6 @@ public class ChatView extends AppCompatActivity {
         message=findViewById(R.id.editTextMessage);
         allMessages=findViewById(R.id.linearChat);
         scrollView=findViewById(R.id.scrollView2);
-
         //get the strings
         sender_id = getIntent().getStringExtra("sender_id");
         receiver_id = getIntent().getStringExtra("receiver_id");
@@ -51,6 +54,12 @@ public class ChatView extends AppCompatActivity {
         receiver_username = getIntent().getStringExtra("receiver_username");
         chat_id = getIntent().getStringExtra("chat_id");
         textView.setText(receiver_username);
+
+        //Toolbar setup
+        Toolbar toolbar=findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Online Chat app");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);//back button displayed in order to return to parent activity
         //initialize connection with db
         database= FirebaseDatabase.getInstance();
         messagesReference=database.getReference("messages");
@@ -58,6 +67,7 @@ public class ChatView extends AppCompatActivity {
         allMessages.removeAllViews();
         showChatMessages(chat_id);
         }
+
     public void send(View view){
         if(!message.getText().toString().trim().isEmpty()){
             messagesReference.push().setValue(new ChatMessage(chat_id,sender_id,message.getText().toString().trim()));
