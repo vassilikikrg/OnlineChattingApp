@@ -91,19 +91,10 @@ public class MainActivity extends AppCompatActivity {
 
         auth.signOut();
     }
-    public void  chatalepis(View view){
-        if (user!=null){
-            Intent intent =new Intent(this,MainActivity2.class);
-            intent.putExtra("nickname",user.getDisplayName());
-            startActivity(intent);
-        }else{
-            showMessage("Error","Please sign-in or create an account first!");
-        }
-    }
     public void  chat(View view){
         if (user!=null){
             Intent intent =new Intent(this,NewMessage.class);
-            intent.putExtra("nickname",user.getDisplayName());
+            intent.putExtra("sender_username",user.getDisplayName());
             intent.putExtra("sender_id",user.getUid());
 
             startActivity(intent);

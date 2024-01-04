@@ -28,56 +28,53 @@ import java.util.List;
 
 public class NewMessage extends AppCompatActivity {
     EditText receiverUsername;
-    FirebaseAuth auth;
-    FirebaseUser user;
     FirebaseDatabase database;
-    DatabaseReference reference,chat_reference;
-    String sender_id, receiver_id,chat_id;
+    DatabaseReference reference;
+    String sender_id,sender_username, receiver_id,receiver_username,chat_id;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
         receiverUsername=findViewById(R.id.editTextReceiverUsername);
         sender_id = getIntent().getStringExtra("sender_id");
-
-        //Code for Authentication
-        auth=FirebaseAuth.getInstance();
-        user = auth.getCurrentUser();
+        sender_username=getIntent().getStringExtra("sender_username");
         //Code for realtime database
         database = FirebaseDatabase.getInstance();
         reference = database.getReference();
     }
     public void gotoconvo(View view){
-        String r_username=receiverUsername.getText().toString();
-        if(!r_username.trim().isEmpty()){
+        String r_username=receiverUsername.getText().toString().trim();
+        if(!r_username.isEmpty()){
+            //search for an existing user with the given username
            reference.child("users").orderByChild("username").equalTo(r_username)
                    .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     if (dataSnapshot.exists()) {
-                        // Username exists in the database
+                        //username exists in the database,get the uid
                         receiver_id=dataSnapshot.getChildren().iterator().next().getKey();
-                        // Check if a chat already exists
+                        receiver_username=r_username;//for later use
+                        //check if a chat already exists,else create a new one
                         checkAndCreateChat(sender_id,receiver_id);
                     } else {
-                        // Username doesn't exist in the database
-                        Toast.makeText(getApplicationContext(), "The user doesn't exist", Toast.LENGTH_LONG).show();
+                        //username doesn't exist in the database
+                        Toast.makeText(getApplicationContext(), "The user doesn't exist.", Toast.LENGTH_LONG).show();
                     }
                 }
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
-                    // Handle the error
+                    Toast.makeText(getApplicationContext(), "An error occured, please try again.", Toast.LENGTH_LONG).show();
                 }
             });
 
             }
         else{
-            Toast.makeText(getApplicationContext(), "Please enter the user to whom you want to send a message!", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "Please enter a username.", Toast.LENGTH_LONG).show();
         }
     }
 
     private void checkAndCreateChat(String uid1,String uid2) {
-        // Check if a chat already exists with the current user and the specified user
+        //check if a chat already exists between the current user and the specified user
         reference.child("chats").orderByChild("users/" + uid1).equalTo(true)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -87,7 +84,7 @@ public class NewMessage extends AppCompatActivity {
                         for (DataSnapshot chatSnapshot : dataSnapshot.getChildren()) {
                             if (chatSnapshot.child("users/" + uid2).exists()) {
                                 chat_id=chatSnapshot.getKey();
-                                // Chat already exists
+                                //chat already exists
                                 chatExists = true;
                                 redirectToChatView();
                                 break;
@@ -97,30 +94,31 @@ public class NewMessage extends AppCompatActivity {
                         if (!chatExists) {
                             createChat(uid1,uid2);
                             redirectToChatView();
-
                         }
 
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Toast.makeText(getApplicationContext(), "An error occured, please try again.", Toast.LENGTH_LONG).show();
                     }
                 });
     }
 
     private void createChat(String uid1,String uid2) {
-        // Create a new chat with the current user and the specified user
+        //create a new chat with the current user and the specified user
         DatabaseReference newChatRef = reference.child("chats").push();
         newChatRef.child("users").child(uid1).setValue(true);
         newChatRef.child("users").child(uid2).setValue(true);
-
-        // Get the chat ID for further use
-       chat_id = newChatRef.getKey();
+        //set the chat ID for further use
+        chat_id = newChatRef.getKey();
     }
     private void redirectToChatView(){
         Intent intent =new Intent(getApplicationContext(),ChatView.class);
         intent.putExtra("sender_id",sender_id);
         intent.putExtra("receiver_id",receiver_id);
+        intent.putExtra("sender_username",sender_username);
+        intent.putExtra("receiver_username",receiver_username);
         intent.putExtra("chat_id",chat_id);
         startActivity(intent);
     }

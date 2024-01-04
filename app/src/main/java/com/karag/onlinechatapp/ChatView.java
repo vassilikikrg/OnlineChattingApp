@@ -1,6 +1,7 @@
 package com.karag.onlinechatapp;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -10,8 +11,11 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -25,7 +29,8 @@ public class ChatView extends AppCompatActivity {
     TextView textView;
     EditText message;
     LinearLayout allMessages;
-    String sender_id,receiver_id,chat_id;
+    ScrollView scrollView;
+    String sender_id,sender_username, receiver_id,receiver_username,chat_id;
     FirebaseDatabase database;
     DatabaseReference messagesReference;
     @Override
@@ -33,100 +38,104 @@ public class ChatView extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_view);
 
+        //find ui components
         textView = findViewById(R.id.textViewTitle);
         message=findViewById(R.id.editTextMessage);
         allMessages=findViewById(R.id.linearChat);
+        scrollView=findViewById(R.id.scrollView2);
 
+        //get the strings
         sender_id = getIntent().getStringExtra("sender_id");
         receiver_id = getIntent().getStringExtra("receiver_id");
+        sender_username = getIntent().getStringExtra("sender_username");
+        receiver_username = getIntent().getStringExtra("receiver_username");
         chat_id = getIntent().getStringExtra("chat_id");
-
-        Log.i("chat",chat_id);
-        //allMessages.setText(""); //clean previous messages
-
+        textView.setText(receiver_username);
+        //initialize connection with db
         database= FirebaseDatabase.getInstance();
         messagesReference=database.getReference("messages");
-        readMessages(chat_id);
-    }
+        // Clear existing messages
+        allMessages.removeAllViews();
+        showChatMessages(chat_id);
+        }
     public void send(View view){
         if(!message.getText().toString().trim().isEmpty()){
-
-            messagesReference.push().setValue(new ChatMessage(chat_id,sender_id,message.getText().toString()));
-            message.setText("");
+            messagesReference.push().setValue(new ChatMessage(chat_id,sender_id,message.getText().toString().trim()));
+            message.setText(""); //clean input field
         }else {
-            showMessage("Error","Please write a message first!..");
+            Toast.makeText(getApplicationContext(),"Please write a message first!..",Toast.LENGTH_SHORT).show();
         }
     }
-    public void readMessages(String chatId) {
-        Query query = messagesReference.orderByChild("chat_id").equalTo(chatId);
-
-        query.addValueEventListener(new ValueEventListener() {
+    public void showChatMessages(String chatId) {
+        messagesReference.orderByChild("chat_id").equalTo(chatId).addChildEventListener(new ChildEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                //StringBuilder allMessageBuilder = new StringBuilder();
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                String messageSenderId = snapshot.child("sender_id").getValue(String.class);
+                String messageText = snapshot.child("text").getValue(String.class);
 
-                for (DataSnapshot messageSnapshot : dataSnapshot.getChildren()) {
-                    // Retrieve individual messages
-                    String senderId = messageSnapshot.child("sender_id").getValue(String.class);
-                    String messageText = messageSnapshot.child("text").getValue(String.class);
-
-                    // Fetch sender's username
-                    DatabaseReference usersRef = database.getReference("users").child(senderId).child("username");
-                    usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot userSnapshot) {
-                            String senderUsername = userSnapshot.getValue(String.class);
-
-                            // Determine the layout to use based on the sender
-                            int layoutResId;
-                            if (senderId.equals(sender_id)) {
-                                layoutResId = R.layout.message_sent;
-                            } else {
-                                layoutResId = R.layout.message_received;
-                            }
-                            // Inflate the chat bubble layout
-                            View chatBubbleView = getLayoutInflater().inflate(layoutResId, null);
-                            // Set the message text
-                            TextView messageTextView = chatBubbleView.findViewById(R.id.textMessageSent);
-                            if (messageTextView == null) {
-                                messageTextView = chatBubbleView.findViewById(R.id.textMessageReceived);
-                            }
-                            messageTextView.setText(senderUsername + ": " + messageText);
-
-                            // Add the chat bubble to the layout
-                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                                    LinearLayout.LayoutParams.WRAP_CONTENT
-                            );
-                            // Set layout gravity for message_sent to "end"
-                            if (senderId.equals(sender_id)) {
-                                params.gravity = Gravity.END;
-                            }
-                            params.setMargins(16, 16, 16, 16); // Add margins as needed
-                            chatBubbleView.setLayoutParams(params);
-                            // Add the chat bubble to the layout
-                            allMessages.addView(chatBubbleView);
-                        }
-
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-                            // Handle the error
-                            Log.e("FirebaseError", "Error: " + databaseError.getMessage());
-                        }
-                    });
+                // Find current message sender's username
+                // and determine the layout to use based on the sender
+                String messageSenderUsername;
+                int layoutResId;
+                if (messageSenderId.equals(sender_id)) {
+                    messageSenderUsername = sender_username;
+                    layoutResId = R.layout.message_sent;
+                } else {
+                    messageSenderUsername = receiver_username;
+                    layoutResId = R.layout.message_received;
                 }
+
+                // Inflate the chat bubble layout
+                View chatBubbleView = getLayoutInflater().inflate(layoutResId, null);
+
+                // Set the message text
+                TextView messageTextView = chatBubbleView.findViewById(R.id.textMessageSent);
+                if (messageTextView == null) {
+                    messageTextView = chatBubbleView.findViewById(R.id.textMessageReceived);
+                }
+                messageTextView.setText(messageSenderUsername + ": " + messageText);
+
+                // Add the chat bubble to the layout
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+                // Set layout gravity for message_sent to "end"
+                if (messageSenderId.equals(sender_id)) {
+                    params.gravity = Gravity.END;
+                }
+                params.setMargins(16, 16, 16, 16); // Add margins as needed
+                chatBubbleView.setLayoutParams(params);
+
+                // Add the chat bubble to the layout
+                allMessages.addView(chatBubbleView);
+                //set focus to bottom
+                scrollView.post(
+                        () -> scrollView.fullScroll(View.FOCUS_DOWN)
+                );
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                // Handle the error
-                Log.e("FirebaseError", "Error: " + databaseError.getMessage());
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("FirebaseError", "Error: " + error.getMessage());
             }
         });
-    }
 
-
-    void showMessage(String title, String message){
-        new AlertDialog.Builder(this).setTitle(title).setMessage(message).setCancelable(true).show();
     }
 }
