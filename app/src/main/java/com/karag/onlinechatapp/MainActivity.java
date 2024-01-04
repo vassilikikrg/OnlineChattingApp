@@ -23,6 +23,7 @@ import com.karag.onlinechatapp.model.User;
 
 public class MainActivity extends AppCompatActivity {
     EditText email,password,nickname;
+    Button buttonSignUp,buttonSignOut;
     FirebaseAuth auth;
     FirebaseUser user;
     FirebaseDatabase database;
@@ -32,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        buttonSignOut=findViewById(R.id.buttonSignOut);
+        buttonSignUp =findViewById(R.id.buttonSignUp);
         email = findViewById(R.id.editTextEmail);
         password=findViewById(R.id.editTextTextPassword);
         nickname=findViewById(R.id.editTextNickname);
@@ -39,8 +42,9 @@ public class MainActivity extends AppCompatActivity {
         auth=FirebaseAuth.getInstance();
         user = auth.getCurrentUser();
         if(user!=null){
-            Button b =findViewById(R.id.button);
-            b.setVisibility(View.GONE);
+            //is signed in
+            buttonSignUp.setVisibility(View.GONE);
+            buttonSignOut.setVisibility(View.VISIBLE);
         }
         //Code for realtime database
         database = FirebaseDatabase.getInstance();
@@ -58,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
                         String uid = user.getUid();
                         writeNewUser(uid,nickname.getText().toString(),email.getText().toString());
                         showMessage("Success","User profile created!");
+                        buttonSignOut.setVisibility(View.VISIBLE);
                     }else{
                         showMessage("Error",task.getException().getLocalizedMessage());
                     }
@@ -88,8 +93,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void signout(View view){
-
         auth.signOut();
+        buttonSignUp.setVisibility(View.VISIBLE);
+        buttonSignOut.setVisibility(View.GONE);
+
     }
     public void  chat(View view){
         if (user!=null){
