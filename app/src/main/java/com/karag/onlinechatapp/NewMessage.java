@@ -53,6 +53,11 @@ public class NewMessage extends AppCompatActivity {
                     if (dataSnapshot.exists()) {
                         //username exists in the database,get the uid
                         receiver_id=dataSnapshot.getChildren().iterator().next().getKey();
+                        if(receiver_id.equals(sender_id)){
+                            //can't send a message to yourself
+                            Toast.makeText(getApplicationContext(), "The user you are trying to message is yourself!..", Toast.LENGTH_LONG).show();
+                            return;
+                        }
                         receiver_username=r_username;//for later use
                         //check if a chat already exists,else create a new one
                         checkAndCreateChat(sender_id,receiver_id);
