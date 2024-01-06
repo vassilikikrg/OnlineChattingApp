@@ -83,7 +83,6 @@ public class Login extends AppCompatActivity {
                 @Override
                 public void onComplete(@NonNull Task<AuthResult> task) {
                     if (task.isSuccessful()){
-                        showMessage("Success","User signed in successfully!");
                         Intent intent=new Intent(getApplicationContext(),NewMessage.class);
                         startActivity(intent);
                         finish();
